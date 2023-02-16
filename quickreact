@@ -1,0 +1,101 @@
+#!/bin/bash
+
+# AUTHOR: @tldmbruno (dev.brunoperes@gmail.com)
+
+# Flags
+file_extension="jsx" # change it to "tsx" for TypeScript support
+include_css=0 # change it to 1 to also generate the CSS file
+blank_file=0 # change it to 1 to generate only blank files
+
+# Handle arguments with flags
+while getopts "hctbrR" opt; do
+    case $opt in
+        h )
+            echo "USAGE: quickreact [Flags -c -t -b] <component> <component2> <component3> ..."
+            echo "-h : Display this help message"
+            echo "-c : Generate also a CSS for each component"
+            echo "-t : Enable TypeScript support"
+            echo "-b : Generate only blank files"
+            echo "-r : Incredibly useful secret command"
+            exit 0
+            ;;
+        c )
+            include_css=1
+            ;;
+        t )
+            file_extension="tsx"
+            ;;
+        b )
+            blank_file=1
+            ;;
+        r )
+            echo "Rolling a die..."
+            sleep 1s
+            echo "The result is: $(( RANDOM % 6 + 1 ))"
+            exit 0
+            ;;
+        R )
+            echo "Rolling a bigger die..."
+            sleep 1s
+            echo "The result is: $(( RANDOM % 20 + 1 ))"
+            exit 0
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            exit 1
+            ;;
+    esac
+done
+
+# Initializes the components args array, without the flags
+shift $((OPTIND-1))
+components=("$@")
+
+# Asks for the component name if the user left it blank
+if [ -z "$1" ]; then
+    read -p "Insert the name of the component: " single_component_name
+
+    # Adds the name to the components args array, for the "for loop"
+    components+=("$single_component_name")
+fi
+
+# Generates one or more components
+for component_name in "$@$single_component_name"
+do
+    # Stores the name and the file name
+    component_directory=${component_name^}
+    component_file="$component_directory/${component_name^}.$file_extension"
+    component_css_file="$component_directory/${component_name^}.css"
+
+    # Checks if the directory already exists
+    if [ -d "$component_directory" ]; then
+        echo "Directory $component_directory already exists."
+        continue
+    fi
+
+    # Creates the directory
+    mkdir "$component_directory"
+
+    # Creates the main file, leaving it blank if the user stated --blank or -b
+    if [ $blank_file -eq 0 ]; then
+        cat > "$component_file" << EOF
+import React from 'react';
+
+export default function ${component_name^}() {
+    return (
+        <p>${component_name^} works!</p>
+    );
+}
+EOF
+    else
+        touch "$component_file"
+    fi
+
+    # Checks if the user wants also a CSS file. If so, creates a blank one.
+    if [ $include_css -eq 1 ]; then
+        touch "$component_css_file"
+    fi
+
+    # Notifies the user the task is completed
+    echo "${component_name^} component created with success at $component_directory."
+done
